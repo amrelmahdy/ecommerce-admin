@@ -465,6 +465,7 @@ export default function CategoriesList(props) {
                                     </div>
 
                                     <PtTable
+                                        type='rormal'
                                         className="table table-ecommerce-simple -striped mb-0"
                                         data={categories.data}
                                         loading={loading}
@@ -473,13 +474,13 @@ export default function CategoriesList(props) {
                                         pageSize={12}
                                         manual
                                         onFetchData={fetchData}
-                                        selectAll={selectAll}
-                                        toggleAll={() => setSelectAll(!selectAll)}
+                                        //selectAll={selectAll}
+                                        //toggleAll={() => setSelectAll(!selectAll)}
                                         isSelected={key => isSelected(key)}
                                         toggleSelection={onSelectChange}
                                         onChangeRef={ref => setTableRef(ref)}
                                     />
-
+                                    {/* 
                                     <div className="datatable-footer">
                                         <Row className="align-items-center justify-content-between mt-3">
                                             <Col md="auto" className="mb-3 mb-lg-0">
@@ -507,7 +508,7 @@ export default function CategoriesList(props) {
                                                 </div>
                                             </Col>
                                         </Row>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </Card.Body>
                         </Card>
