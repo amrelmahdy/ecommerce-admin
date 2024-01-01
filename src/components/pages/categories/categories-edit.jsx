@@ -8,62 +8,139 @@ import DeleteConfirmModal from '../../features/modals/delete-confirm-modal';
 import Loader from '../../features/loader';
 import MediaGalleryModal from '../../features/modals/media-gallery-modal';
 import PNotify from '../../features/elements/p-notify';
+import PtFileUpload from '../../features/elements/file-upload';
 
 import { getCroppedImageUrl, removeXSSAttacks } from '../../../utils';
-import { getCategory } from '../../../api';
+import { getCategory, getCategories, updateCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
 
-export default function CategoriesEdit ( props ) {
-    const [ cat, setCat ] = useState( null );
-    const [ loading, setLoading ] = useState( true );
-    const [ tree, setTree ] = useState( [] );
-    const [ openModal, setOpenModal ] = useState( false );
-    const [ modalGallery, setModalGallery ] = useState( false );
+export default function CategoriesEdit({ history, ...props }) {
 
-    useEffect( () => {
-        setLoading( true );
-        getCategory( parseInt( props.match.params.id ) ).then( result => {
-            if ( !result ) {
-                return props.history.push( `${ process.env.PUBLIC_URL }/pages/404` );
+    console.log("props", props)
+
+    const [cat, setCat] = useState(null);
+    const [categories, setCategories] = useState([]);
+    const [parent, setParent] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [tree, setTree] = useState([]);
+    const [openModal, setOpenModal] = useState(false);
+    const [modalGallery, setModalGallery] = useState(false);
+    const [imageFile, setImageFile] = useState(null);
+
+    const handleOnFileChange = file => {
+        setImageFile(file);
+    }
+
+    const imageUploadFileRef = React.createRef();
+
+
+    useEffect(() => {
+        setLoading(true);
+        getCategory(props.match.params.id).then(result => {
+            if (!result) {
+                return props.history.push(`${process.env.PUBLIC_URL}/pages/404`);
             }
-            setCat( result.data );
-            setTree( result.tree );
-            setLoading( false );
-        } );
-    }, [ props.match.params.id ] )
+            getCategories().then(categories => {
+                setCategories(categories.data);
+            });
 
-    function saveCategory ( e ) {
+            setCat(result);
+            setLoading(false);
+        });
+
+
+    }, [props.match.params.id])
+
+    const saveCategory = async (e) => {
         e.preventDefault();
-        toast(
-            <PNotify title="Success" icon="fas fa-check" text="Category saved successfully." />,
-            {
-                containerId: "default",
-                className: "notification-success"
+
+        try {
+            if (imageFile) {
+                const imagePath = await uploadCategoryImage(imageFile);
+                cat.image = imagePath.data;
             }
-        );
+            const updated = await updateCategory(props.match.params.id, cat);
+            if (updated) {
+                history.push("/products/categories")
+                toast(
+                    <PNotify title="Success" icon="fas fa-check" text="Category saved successfully." />,
+                    {
+                        containerId: "default",
+                        className: "notification-success"
+                    }
+                );
+            } else {
+                toast(
+                    <PNotify title="Whhoos" icon="fas fa-check" text="Something went wrong." />,
+                    {
+                        containerId: "default",
+                        className: "notification-danger"
+                    }
+                );
+            }
+        } catch (err) {
+            let title = "Whoops"
+            let message = "Something went wrong please try again later"
+            if (err.response.status == 409) {
+                title = "Conflict"
+                message = err.response.data.message
+            }
+
+            toast(
+                <PNotify title={title} icon="fas fa-exclamation-circle" text={message} />,
+                {
+                    containerId: "default",
+                    className: "notification-danger"
+                }
+            );
+        }
+
+
     }
 
-    function deleteCategory ( e ) {
+    const handleDeleteCategory = (e) => {
         e.preventDefault();
-        setOpenModal( true );
+        setOpenModal(true);
     }
 
-    function deleteConfirm ( result ) {
-        setOpenModal( false );
-        result && props.history.push( `${ process.env.PUBLIC_URL }/${ cat.type }s/categories` );
+
+
+
+
+
+    const deleteConfirm = async (result) => {
+        setOpenModal(false);
+        try {
+            const deleted = await deleteCategory(props.match.params.id);
+            if (deleted) {
+                history.push("/products/categories")
+            } else {
+
+            }
+        } catch (err) {
+            toast(
+                <PNotify title='Whoops' icon="fas fa-exclamation-circle" text="Something went wrong." />,
+                {
+                    containerId: "default",
+                    className: "notification-danger"
+                }
+            );
+        }
+
+        //result && props.history.push(`${process.env.PUBLIC_URL}/${cat.type}s/categories`);
     }
 
-    function selectImage ( e ) {
+    function selectImage(e) {
         e.preventDefault();
-        setModalGallery( true );
+        setModalGallery(true);
     }
 
-    function closeModal ( selectedMedia ) {
-        setModalGallery( false );
-        if ( selectedMedia.length ) {
-            setCat( {
+    function closeModal(selectedMedia) {
+        setModalGallery(false);
+        if (selectedMedia.length) {
+            setCat({
                 ...cat,
-                media: selectedMedia[ 0 ]
-            } );
+                media: selectedMedia[0]
+            });
         }
     }
 
@@ -73,18 +150,18 @@ export default function CategoriesEdit ( props ) {
                 loading ? <Loader />
                     :
                     <>
-                        <Breadcrumb current="Edit Category" paths={ [ {
+                        <Breadcrumb current="Edit Category" paths={[{
                             name: 'Home',
                             url: '/'
                         }, {
                             name: cat.type + 's',
-                            url: `/${ cat.type }s`
+                            url: `/${cat.type}s`
                         }, {
                             name: 'Categoriess',
-                            url: `/${ cat.type }s/categories`
-                        } ] } />
+                            url: `/${cat.type}s/categories`
+                        }]} />
 
-                        <Form className="ecommerce-form" action="#" method="post" onSubmit={ saveCategory }>
+                        <Form className="ecommerce-form" action="#" method="post" onSubmit={saveCategory}>
                             <Row>
                                 <Col>
                                     <Card className="card-modern card-big-info">
@@ -96,53 +173,69 @@ export default function CategoriesEdit ( props ) {
                                                     <p className="card-big-info-desc">Add here the category description with all details and necessary information.</p>
                                                 </Col>
                                                 <Col lg="3-5" xl="4-5">
-                                                    <Form.Group as={ Row } className="align-items-center">
-                                                        <Col as={ Form.Label } lg={ 5 } xl={ 3 } className="control-label text-lg-right mb-lg-0">Category Name</Col>
-                                                        <Col lg={ 7 } xl={ 6 }>
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Arabic Name</Col>
+                                                        <Col lg={7} xl={6}>
                                                             <Form.Control
                                                                 type="text"
                                                                 className="form-control-modern"
                                                                 maxLength="50"
-                                                                name="name"
-                                                                value={ cat.name }
-                                                                onChange={ e => setCat( { ...cat, name: e.target.value } ) }
+                                                                name="ar_name"
+                                                                value={cat.ar_name}
+                                                                onChange={e => setCat({ ...cat, ar_name: e.target.value })}
                                                                 required
                                                             />
                                                         </Col>
                                                     </Form.Group>
-                                                    <Form.Group as={ Row } className="align-items-center">
-                                                        <Col as={ Form.Label } lg={ 5 } xl={ 3 } className="control-label text-lg-right mb-lg-0">Slug</Col>
-                                                        <Col lg={ 7 } xl={ 6 }>
+
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">English Name</Col>
+                                                        <Col lg={7} xl={6}>
+                                                            <Form.Control
+                                                                type="text"
+                                                                className="form-control-modern"
+                                                                maxLength="50"
+                                                                name="en_name"
+                                                                value={cat.en_name}
+                                                                onChange={e => setCat({ ...cat, en_name: e.target.value })}
+                                                                required
+                                                            />
+                                                        </Col>
+                                                    </Form.Group>
+
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Slug</Col>
+                                                        <Col lg={7} xl={6}>
                                                             <Form.Control
                                                                 type="text"
                                                                 className="form-control-modern"
                                                                 maxLength="50"
                                                                 name="slug"
-                                                                value={ cat.slug }
-                                                                onChange={ e => setCat( { ...cat, slug: e.target.value } ) }
+                                                                value={cat.slug}
+                                                                onChange={e => setCat({ ...cat, slug: e.target.value })}
                                                             />
                                                         </Col>
                                                     </Form.Group>
-                                                    <Form.Group as={ Row } className="align-items-center">
-                                                        <Col as={ Form.Label } lg={ 5 } xl={ 3 } className="control-label text-lg-right mb-lg-0">Parent Category</Col>
-                                                        <Col lg={ 7 } xl={ 6 }>
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Parent Category</Col>
+                                                        <Col lg={7} xl={6}>
                                                             <Form.Control
                                                                 as="select"
                                                                 className="form-control-modern"
                                                                 name="parent"
-                                                                value={ cat.parent }
-                                                                onChange={ e => setCat( { ...cat, parent: parseInt( e.target.value ) } ) }
+                                                                value={cat.parent}
+                                                                onChange={e => setCat({ ...cat, parent: e.target.value })}
                                                             >
                                                                 <option value="0">None</option>
                                                                 {
-                                                                    tree.map( ( item, index ) => (
-                                                                        <option key={ 'cat-' + index } value={ item.id } dangerouslySetInnerHTML={ removeXSSAttacks( "&nbsp;".repeat( item.depth * 3 ) + item.name ) }></option>
-                                                                    ) )
+                                                                    categories.map((item, index) => (
+                                                                        <option key={'cat-' + index} value={item.id}>{item.en_name}</option>
+                                                                    ))
                                                                 }
                                                             </Form.Control>
                                                         </Col>
                                                     </Form.Group>
-                                                    <Form.Group as={ Row }>
+                                                    {/* <Form.Group as={ Row }>
                                                         <Col as={ Form.Label } lg={ 5 } xl={ 3 } className="control-label text-lg-right mb-lg-0 pt-2 mt-1 mb-0">Description</Col>
                                                         <Col lg={ 7 } xl={ 6 }>
                                                             <Form.Control
@@ -155,34 +248,46 @@ export default function CategoriesEdit ( props ) {
                                                                 onChange={ e => setCat( { ...cat, description: e.target.value } ) }
                                                             />
                                                         </Col>
+                                                    </Form.Group> */}
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Category Image</Col>
+                                                        <PtFileUpload ref={imageUploadFileRef} handleOnFileChange={handleOnFileChange} />
+                                                        <span className="help-block">&nbsp; Supported extentions are .(png - jpeg - jpg)</span>
                                                     </Form.Group>
-                                                    <Form.Group as={ Row } className="align-items-center">
-                                                        <Col as={ Form.Label } lg={ 5 } xl={ 3 } className="control-label text-lg-right mb-lg-0">Category Image</Col>
-                                                        <Col lg={ 7 } xl={ 6 }>
-                                                            <Button
+
+                                                    <Form.Group as={Row} className="align-items-center">
+                                                        <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Category Image</Col>
+                                                        <Col lg={7} xl={6}>
+                                                            {/* <Button
                                                                 href="#mediaGallery"
                                                                 className="ml-auto mr-3"
                                                                 variant="primary"
-                                                                onClick={ selectImage }
+                                                                onClick={selectImage}
                                                             >
                                                                 Select Image
-                                                            </Button>
+                                                            </Button> */}
 
                                                             <div className="category-image d-inline-block">
-                                                                { cat.media ?
+                                                                {/* {cat.image ?
                                                                     <img
-                                                                        src={ cat.media.virtual ? cat.media.copy_link : getCroppedImageUrl( `${ process.env.PUBLIC_URL }/mock-server/images/${ cat.media.copy_link }`, 150 ) }
-                                                                        alt={ cat.media.alt_text ? cat.media.alt_text : 'category' }
-                                                                        width={ 60 }
-                                                                        height={ 60 }
+                                                                        src={cat.media.virtual ? cat.media.copy_link : getCroppedImageUrl(`${process.env.PUBLIC_URL}/mock-server/images/${cat.media.copy_link}`, 150)}
+                                                                        alt={cat.media.alt_text ? cat.media.alt_text : 'category'}
+                                                                        width={60}
+                                                                        height={60}
                                                                     />
                                                                     : <img
-                                                                        src={ `${ process.env.PUBLIC_URL }/assets/images/porto-placeholder-66x66.png` }
+                                                                        src={`${process.env.PUBLIC_URL}/assets/images/porto-placeholder-66x66.png`}
                                                                         alt="category"
                                                                         width="60"
                                                                         height="60"
                                                                     />
-                                                                }
+                                                                } */}
+                                                                <img
+                                                                    src={`${process.env.REACT_APP_BASE_URL}/${cat.image}`}
+                                                                    alt="category"
+                                                                    width="60"
+                                                                    height="60"
+                                                                />
                                                             </div>
                                                         </Col>
                                                     </Form.Group>
@@ -202,8 +307,8 @@ export default function CategoriesEdit ( props ) {
                                 </Col>
                                 <Col md="auto" className="col-6 px-md-0 mt-0">
                                     <Button
-                                        as={ Link }
-                                        to={ `${ process.env.PUBLIC_URL }/${ cat.type }s/categories` }
+                                        as={Link}
+                                        to={`/products/categories`}
                                         className="btn-px-4 py-3 border font-weight-semibold text-color-dark line-height-1 d-flex h-100 align-items-center"
                                         variant="light"
                                     >Back</Button>
@@ -213,16 +318,16 @@ export default function CategoriesEdit ( props ) {
                                         href="#delete"
                                         className="btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
                                         variant="danger"
-                                        onClick={ deleteCategory }
+                                        onClick={handleDeleteCategory}
                                     ><i className="bx bx-trash text-4 mr-2"></i> Delete Category</Button>
                                 </Col>
                             </Row>
                         </Form>
+
                     </>
             }
 
-            <DeleteConfirmModal isOpen={ openModal } onClose={ deleteConfirm } />
-            <MediaGalleryModal chooseOne={ true } isOpen={ modalGallery } onClose={ closeModal } />
+            <DeleteConfirmModal isOpen={openModal} onClose={deleteConfirm} />
         </>
     )
 }

@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap';
 import { toast } from 'react-toastify';
-
 import Breadcrumb from '../../common/breadcrumb';
 import PtTable from '../../features/elements/table';
-import MediaGalleryModal from '../../features/modals/media-gallery-modal';
 import PNotify from '../../features/elements/p-notify';
 import PtLazyLoad from '../../features/lazyload';
+import PtFileUpload from '../../features/elements/file-upload';
 
-import { getCategories, addCategory } from '../../../api/categories';
-import { removeXSSAttacks, getCroppedImageUrl } from '../../../utils';
+import { getCategories, addCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
+import { removeXSSAttacks } from '../../../utils';
 
 export default function CategoriesList(props) {
     const type = props.type;
@@ -37,6 +36,7 @@ export default function CategoriesList(props) {
     const [arName, setArName] = useState('');
     const [slug, setSlug] = useState('');
     const [parent, setParent] = useState(0);
+    const [imageFile, setImageFile] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
 
     // Columns
@@ -56,7 +56,7 @@ export default function CategoriesList(props) {
                 {row.value.image &&
                     <img
                         className="border mr-1"
-                        src={`${process.env.REACT_APP_BASE_URL}${row.value.image}`}
+                        src={`${process.env.REACT_APP_BASE_URL}/${row.value.image}`}
                         alt="category"
                         width="60"
                         height="60"
@@ -97,6 +97,9 @@ export default function CategoriesList(props) {
         )
     }];
 
+
+    const imageUploadFileRef = React.createRef();
+
     useEffect(() => {
         setSelected(selected.map(item => {
             return {
@@ -122,14 +125,21 @@ export default function CategoriesList(props) {
         }));
     }
 
-    function deleteRow(e, index) {
+    const deleteRow = async (e, index) => {
         e.preventDefault();
         if (window.confirm("Are you sure you want to delete this data?")) {
-            setAjax({
-                ...ajax,
-                data: ajax.data.filter(cat => cat.id !== index)
-            });
-            setTree(tree.filter(cat => cat.id !== index));
+            try {
+                const deleted = await deleteCategory(index);
+                if (deleted) handleGetCategories(0, 12, [], []);
+            } catch (err) {
+                toast(
+                    <PNotify title='Whoops' icon="fas fa-exclamation-circle" text="Something went wrong." />,
+                    {
+                        containerId: "default",
+                        className: "notification-danger"
+                    }
+                );
+            }
         }
     }
 
@@ -192,21 +202,38 @@ export default function CategoriesList(props) {
     }
 
 
+
+    const handleOnFileChange = file => {
+        setImageFile(file);
+    }
+
+
     async function handleAddCategory(e) {
         e.preventDefault();
         const newCat = {
-            ar_name: enName,
-            en_name: arName,
+            ar_name: arName,
+            en_name: enName,
             slug
         }
-
         if (parent != 0) newCat.parent = parent
-
-
         try {
+            if (imageFile) {
+                const imagePath = await uploadCategoryImage(imageFile);
+                newCat.image = imagePath.data;
+            }
             const created = await addCategory(newCat);
 
             if (created) {
+                if (imageUploadFileRef.current) {
+                    imageUploadFileRef.current.removeFile()
+                }
+                setArName("");
+                setEnName("");
+                setSlug("");
+                setParent(0);
+                setImageFile(null)
+
+                // get categories again
                 handleGetCategories(0, 12, [], [])
 
                 toast(
@@ -243,10 +270,7 @@ export default function CategoriesList(props) {
         }
     }
 
-    // setArName("");
-    // setEnName("");
-    // setSlug("");
-    // setParent(0);
+
 
     // let index = ajax.data.findIndex(cat => cat.id === parent);
     // let treeIndex = tree.findIndex(cat => cat.id === parent);
@@ -283,24 +307,6 @@ export default function CategoriesList(props) {
     // setTree([...tree]);
     // setParent(0);
 
-
-
-
-
-
-    function selectImage(e) {
-        e.preventDefault();
-        setModalOpen(true);
-    }
-
-    function closeModal(selectedMedia) {
-        setModalOpen(false);
-        if (selectedMedia.length) {
-            //setMedia(selectedMedia[0]);
-        }
-    }
-
-
     return (
         <>
             <Breadcrumb current={`${type === 'products' ? 'Product' : 'Post'} categories`} paths={[{
@@ -316,19 +322,7 @@ export default function CategoriesList(props) {
                     <Form method="post" action="#" onSubmit={handleAddCategory}>
                         <Card className="card-modern">
                             <Card.Body>
-                                <Form.Group className="align-items-center">
-                                    <Form.Label className="control-label">English name</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        maxLength="20"
-                                        className="form-control-modern"
-                                        name="en_name"
-                                        value={enName}
-                                        onChange={e => setEnName(e.target.value)}
-                                        required
-                                    />
-                                    <span className="help-block">Name for the category in english.</span>
-                                </Form.Group>
+
                                 <Form.Group className="align-items-center">
                                     <Form.Label className="control-label">Arabic Name</Form.Label>
                                     <Form.Control
@@ -341,6 +335,19 @@ export default function CategoriesList(props) {
                                         required
                                     />
                                     <span className="help-block">Name for the category in arabic.</span>
+                                </Form.Group>
+                                <Form.Group className="align-items-center">
+                                    <Form.Label className="control-label">English name</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        maxLength="20"
+                                        className="form-control-modern"
+                                        name="en_name"
+                                        value={enName}
+                                        onChange={e => setEnName(e.target.value)}
+                                        required
+                                    />
+                                    <span className="help-block">Name for the category in english.</span>
                                 </Form.Group>
                                 <Form.Group className="align-items-center">
                                     <Form.Label className="control-label">Slug</Form.Label>
@@ -387,7 +394,7 @@ export default function CategoriesList(props) {
                                     />
                                     <span className="help-block">Add description for the category.</span>
                                 </Form.Group> */}
-                                <Form.Group className="d-flex align-items-center">
+                                {/* <Form.Group className="d-flex align-items-center">
                                     <Button
                                         href="#mediaGallery"
                                         className="mr-3"
@@ -410,11 +417,19 @@ export default function CategoriesList(props) {
                                                 width="60"
                                                 height="60"
                                             />
-                                        } */}
+                                        } 
                                     </div>
+                                </Form.Group> */}
+
+                                <Form.Group className="align-items-center">
+                                    <Form.Label className="control-label">Upload Image</Form.Label>
+                                    <PtFileUpload ref={imageUploadFileRef} handleOnFileChange={handleOnFileChange} />
+                                    <span className="help-block">Supported extentions are .(png - jpeg - jpg)</span>
                                 </Form.Group>
+
+
                                 <Form.Group>
-                                    <Button type="submit" variant="primary">Add category</Button>
+                                    <Button disabled={loading} type="submit" variant="primary">Add category</Button>
                                 </Form.Group>
                             </Card.Body>
                         </Card>
@@ -499,8 +514,6 @@ export default function CategoriesList(props) {
                     </Form>
                 </Col>
             </Row>
-
-            <MediaGalleryModal chooseOne={true} isOpen={modalOpen} onClose={closeModal} />
         </>
     )
 }

@@ -105,14 +105,14 @@ export default function MediaGalleryModal ( { isOpen, onClose, chooseOne = false
                         {
                             loading ? <Loader />
                                 :
-                                <Tabs className="tabs" defaultIndex={ 1 } selectedTabClassName="active" selectedTabPanelClassName="show" forceRenderTabPanel={ true }>
+                                <Tabs className="tabs" defaultIndex={ 0 } selectedTabClassName="active" selectedTabPanelClassName="show" forceRenderTabPanel={ true }>
                                     <TabList className="nav nav-tabs">
                                         <Tab className="nav-item">
                                             <a href="#upload" onClick={ e => e.preventDefault() } className="nav-link border-bottom-0">Upload Media</a>
                                         </Tab>
-                                        <Tab className="nav-item">
+                                        {/* <Tab className="nav-item">
                                             <a href="#gallery" onClick={ e => e.preventDefault() } className="nav-link border-bottom-0">Media Gallery</a>
-                                        </Tab>
+                                        </Tab> */}
                                     </TabList>
 
                                     <TabPanel className="tab-pane">
