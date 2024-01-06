@@ -6,11 +6,8 @@ import { toast } from 'react-toastify';
 import Breadcrumb from '../../common/breadcrumb';
 import DeleteConfirmModal from '../../features/modals/delete-confirm-modal';
 import Loader from '../../features/loader';
-import MediaGalleryModal from '../../features/modals/media-gallery-modal';
 import PNotify from '../../features/elements/p-notify';
 import PtFileUpload from '../../features/elements/file-upload';
-
-import { getCroppedImageUrl, removeXSSAttacks } from '../../../utils';
 import { getCategory, getCategories, updateCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
 
 export default function CategoriesEdit({ history, ...props }) {
@@ -40,7 +37,7 @@ export default function CategoriesEdit({ history, ...props }) {
                 return props.history.push(`${process.env.PUBLIC_URL}/pages/404`);
             }
             getCategories().then(categories => {
-                setCategories(categories.data);
+                setCategories(categories);
             });
 
             setCat(result);
@@ -229,7 +226,7 @@ export default function CategoriesEdit({ history, ...props }) {
                                                                 <option value="0">None</option>
                                                                 {
                                                                     categories.map((item, index) => (
-                                                                        <option key={'cat-' + index} value={item.id}>{item.en_name}</option>
+                                                                        <option key={'cat-' + index} value={item.id}>{item.ar_name}</option>
                                                                     ))
                                                                 }
                                                             </Form.Control>

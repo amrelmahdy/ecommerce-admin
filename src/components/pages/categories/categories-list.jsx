@@ -10,10 +10,10 @@ import PtFileUpload from '../../features/elements/file-upload';
 
 import { getCategories, addCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
 import { removeXSSAttacks } from '../../../utils';
+import { getCategoriesList } from '../../../api/data.factory';
 
 export default function CategoriesList(props) {
     const type = props.type;
-    const [isFirst, setIsFirst] = useState(true);
     const [loading, setLoading] = useState(true);
     const [ajax, setAjax] = useState({
         data: [],
@@ -74,7 +74,7 @@ export default function CategoriesList(props) {
     },
     {
         Header: 'Parent',
-        accessor: 'parent.en_name',
+        accessor: 'parent.ar_name',
         sortable: true
     },
     {
@@ -173,37 +173,37 @@ export default function CategoriesList(props) {
 
     function searchCategories(e) {
         e.preventDefault();
-        tableRef.current.wrappedInstance.filterColumn({ id: 'en_name' }, search);
+        tableRef.current.filterColumn({ id: 'en_name' }, search);
     }
 
     async function fetchData(state) {
-        console.log(state)
         handleGetCategories(state.page * state.pageSize, (state.page + 1) * state.pageSize, state.filtered, state.sorted, state)
     }
 
 
-    const handleGetCategories = (from = 0, to, filters = [], sortBy = [], state = undefined) => {
+    const handleGetCategories = async (from = 0, to, filters = [], sortBy = [], state = undefined) => {
         setLoading(true);
-        getCategories(from, to, filters, sortBy)
-            .then(results => {
 
-                const pageSize = state ? state.pageSize : 12
-
-
-                console.log("(results.total / pageSize ) + !(!(results.total % pageSize))",)
-
-                setLoading(false);
-                setCategories({
-                    data: results.data,
-                    total: parseInt(results.total / pageSize) + !(!(results.total % pageSize))
-                });
-                setSelectAll(false);
+        try {
+            const results = await getCategories();
+            const pageSize = state ? state.pageSize : 12
+            setLoading(false);
+            const { data, total } = getCategoriesList(results, from, to, filters, sortBy)
+            setCategories({
+                data: data,
+                total: parseInt(total / pageSize) + !(!(total % pageSize))
             });
+            setSelectAll(false);
+        } catch (error) {
+            console.log("error fetching categories list ", error)
+        }
+
     }
 
 
 
     const handleOnFileChange = file => {
+        console.log("file", file)
         setImageFile(file);
     }
 

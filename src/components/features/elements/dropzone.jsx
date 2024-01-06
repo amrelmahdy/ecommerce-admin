@@ -2,9 +2,11 @@ import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 
-function PtDropzone ( props ) {
-    const [ files, setFiles ] = useState( [] );
-    const onDrop = useCallback( acceptedFiles => {
+function PtDropzone({ handleSelectedFiles, ...props }) {
+    const [files, setFiles] = useState([]);
+
+    const onDrop = useCallback(acceptedFiles => {
+        handleSelectedFiles && handleSelectedFiles(acceptedFiles)
         let uploadedfiles = acceptedFiles.map( file => {
             return {
                 id: parseInt( Math.random() * 100 ) + 32,
@@ -17,45 +19,45 @@ function PtDropzone ( props ) {
         } );
         props.onUpload && props.onUpload( uploadedfiles );
         setFiles( files.concat( uploadedfiles ) );
-    }, [ files ] );
-    const { getRootProps, getInputProps } = useDropzone( { onDrop } );
+    }, [files]);
+    const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
-    function imageLoaded ( index ) {
-        let imagePreview = document.querySelectorAll( '.dz-preview' )[ index ];
-        imagePreview.classList.add( 'dz-success', 'dz-complete' );
-        imagePreview.querySelector( '.dz-upload' ).style.width = '100%';
+    function imageLoaded(index) {
+        let imagePreview = document.querySelectorAll('.dz-preview')[index];
+        imagePreview.classList.add('dz-success', 'dz-complete');
+        imagePreview.querySelector('.dz-upload').style.width = '100%';
     }
 
-    function removeFile ( e, id ) {
+    function removeFile(e, id) {
         e.preventDefault();
         e.stopPropagation();
-        setFiles( files.filter( file => file.id !== id ) );
-        props.onRemove && props.onRemove( id );
+        setFiles(files.filter(file => file.id !== id));
+        props.onRemove && props.onRemove(id);
     }
 
     return (
         <>
-            <div className={ `dropzone-modern dz-square dz-clickable dropzone ${ files.length ? 'dz-started' : '' }` } { ...getRootProps() }>
-                <input { ...getInputProps() } />
+            <div className={`dropzone-modern dz-square dz-clickable dropzone ${files.length ? 'dz-started' : ''}`} {...getRootProps()}>
+                <input {...getInputProps()} />
                 <span className="dropzone-upload-message text-center">
                     <i className="bx bxs-cloud-upload"></i>
                     <b className="text-color-primary">Drag/Upload</b> your images here.
                 </span>
                 {
-                    files.map( ( file, index ) => (
-                        <div className="dz-image-preview dz-preview dz-processing" key={ `preview-${ index }` }>
+                    files.map((file, index) => (
+                        <div className="dz-image-preview dz-preview dz-processing" key={`preview-${index}`}>
                             <div className="dz-image">
                                 <LazyLoadImage
-                                    src={ file.copy_link }
+                                    src={file.copy_link}
                                     alt="previw"
-                                    afterLoad={ () => imageLoaded( index ) }
+                                    afterLoad={() => imageLoaded(index)}
                                 />
                             </div>
                             <div className="dz-details">
                                 <div className="dz-size">
-                                    <span>{ ( file.size / ( 1024 * 1024 ) ).toFixed( 2 ) }</span> MB
+                                    <span>{(file.size / (1024 * 1024)).toFixed(2)}</span> MB
                                 </div>
-                                <div className="dz-filename"><span>{ file.name }</span></div>
+                                <div className="dz-filename"><span>{file.name}</span></div>
                             </div>
                             <div className="dz-progress">
                                 <span className="dz-upload"></span>
@@ -68,9 +70,9 @@ function PtDropzone ( props ) {
                                     </g>
                                 </svg>
                             </div>
-                            <a className="dz-remove" href="#remove" onClick={ ( e ) => removeFile( e, file.id ) }>Remove file</a>
+                            <a className="dz-remove" href="#remove" onClick={(e) => removeFile(e, file.id)}>Remove file</a>
                         </div>
-                    ) )
+                    ))
                 }
             </div>
         </>

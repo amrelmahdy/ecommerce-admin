@@ -6,6 +6,20 @@ import { error } from 'bfj/src/events';
 
 const API_URL = process.env.PUBLIC_URL;
 
+
+
+export const uploadDynamicImages = async (images, path) => {
+    const formData = new FormData();
+    images.forEach(image => {
+        formData.append('files', image, image.name);
+    })
+    if (path) formData.append('path', path);
+    const { data } = await httpClient.post(`dynamic-upload-multiple-files`, formData)
+    return data
+}
+
+
+
 // APIs to get media from mock server
 export const getMedia = function (from = 0, to, filters, sortBy) {
     return axios.get(API_URL + '/mock-server/media.json')

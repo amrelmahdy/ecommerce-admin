@@ -1,41 +1,20 @@
-import axios from 'axios';
-
-import { getCategoryTree } from '../utils';
 import { httpClient } from './http';
-import { error } from 'bfj/src/events';
 
 
-export const getCategories = async function (from = 0, to, filters, sortBy) {
-
-    console.log(from, to, filters, sortBy)
+export const getCategories = async function () {
     try {
-        const response = await httpClient.get('/categories');
-        let results = response.data;
-        // apply search functionality
-        filters && filters.forEach(filter => {
-            results = results.filter(cat => cat[filter.id].search(new RegExp(filter.value, 'i')) >= 0);
-        });
-        sortBy && sortBy.forEach(sort => {
-            let index = sort.desc ? -1 : 1;
-            switch (sort.id) {
-                case 'en_name':
-                    results = results.sort((a, b) => a.en_name < b.en_name ? -index : index);
-                    break;
-                case 'ar_name':
-                    results = results.sort((a, b) => a.ar_name < b.ar_name ? -index : index);
-                    break;
-                case 'slug':
-                    results = results.sort((a, b) => a.slug < b.slug ? -index : index);
-                    break;
-                default:
-                    break;
-            }
-        });
-        return {
-            data: results.slice(from, to),
-            total: results.length,
-            tree: []
-        }
+        const { data } = await httpClient.get('/categories');
+        return data;
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+
+export const getAllCategories = async function () {
+    try {
+        const { data } = await httpClient.get('/categories');
+        return data
     } catch (error) {
         console.log(error);
     }
@@ -45,6 +24,7 @@ export const getCategories = async function (from = 0, to, filters, sortBy) {
 export const uploadCategoryImage = async function (image) {
     const formData = new FormData();
     formData.append('file', image);
+    console.log("formData", formData, image)
     const { data } = await httpClient.post('/upload-single-file', formData);
     return data;
 }
