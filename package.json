@@ -2,6 +2,12 @@
   "name": "react-porto",
   "version": "1.1.0",
   "private": true,
+  "homepage": "https://d-themes.com/react/porto/adminpanel",
+  "basename": "/",
+  "engines": {
+    "node": "16.13.0",
+    "npm": "6.14.13"
+  },
   "dependencies": {
     "@babel/core": "7.1.0",
     "@svgr/webpack": "2.4.1",
