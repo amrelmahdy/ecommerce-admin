@@ -4,6 +4,9 @@
   "private": true,
   "homepage": "https://d-themes.com/react/porto/adminpanel",
   "basename": "/",
+  "engines": {
+    "node": ">=6"
+  },
   "dependencies": {
     "@babel/core": "7.1.0",
     "@svgr/webpack": "2.4.1",
