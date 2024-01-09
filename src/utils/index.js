@@ -6,10 +6,10 @@
  * 
  * @returns {String}
  */
-export function getCroppedImageUrl ( url, width ) {
+export function getCroppedImageUrl(url, width) {
     let i;
-    for ( i = url.length - 1; i >= 0 && url[ i ] !== '.'; i-- );
-    return url.substr( 0, i ) + `-${ width }x${ width }.` + url.substr( i + 1 );
+    for (i = url.length - 1; i >= 0 && url[i] !== '.'; i--);
+    return url.substr(0, i) + `-${width}x${width}.` + url.substr(i + 1);
 }
 
 /**
@@ -18,15 +18,15 @@ export function getCroppedImageUrl ( url, width ) {
  * @param {String} url 
  * @returns {Object}
  */
-export function getQueryInfo ( url ) {
-    let array = url.slice( 1 ).split( '&' );
-    return array.reduce( ( acc, cur ) => {
-        if ( cur !== '' ) {
-            let [ key, value ] = cur.split( '=' );
-            acc[ key ] = value;
+export function getQueryInfo(url) {
+    let array = url.slice(1).split('&');
+    return array.reduce((acc, cur) => {
+        if (cur !== '') {
+            let [key, value] = cur.split('=');
+            acc[key] = value;
         }
         return acc;
-    }, {} );
+    }, {});
 }
 
 /**
@@ -35,12 +35,12 @@ export function getQueryInfo ( url ) {
  * @param {Object} query 
  * @returns {String}
  */
-export function getQueryString ( query ) {
+export function getQueryString(query) {
     let arr = [];
-    for ( let key in query ) {
-        arr.push( key + '=' + query[ key ] );
+    for (let key in query) {
+        arr.push(key + '=' + query[key]);
     }
-    return '?' + arr.join( '&' );
+    return '?' + arr.join('&');
 }
 
 /**
@@ -50,30 +50,30 @@ export function getQueryString ( query ) {
  * @param {Number} except 
  * @returns {Array<Object>}
  */
-export function getCategoryTree ( categories, except ) {
-    let stack = categories.filter( cat => cat.parent === 0 && ( !except || cat.id !== except ) ).map( cat => {
+export function getCategoryTree(categories, except) {
+    let stack = categories.filter(cat => cat.parent === 0 && (!except || cat.id !== except)).map(cat => {
         return {
             ...cat,
             depth: 0
         };
-    } );
+    });
     let results = [];
     let temp, children;
     const filter = categories => {
-        return categories.filter( cat => cat.parent === temp.id && ( !except || cat.id !== except ) ).map( cat => {
+        return categories.filter(cat => cat.parent === temp.id && (!except || cat.id !== except)).map(cat => {
             return {
                 ...cat,
                 depth: temp.depth + 1
             };
-        } );
+        });
     }
 
-    while ( stack.length ) {
-        temp = stack[ stack.length - 1 ];
+    while (stack.length) {
+        temp = stack[stack.length - 1];
         stack.pop();
-        results.push( temp );
-        children = filter( categories );
-        stack = stack.concat( children );
+        results.push(temp);
+        children = filter(categories);
+        stack = stack.concat(children);
     }
 
     return results;
@@ -85,16 +85,16 @@ export function getCategoryTree ( categories, except ) {
  * @param {String} html 
  * @returns {String} Sanitized HTML
  */
-export function removeXSSAttacks ( html ) {
+export function removeXSSAttacks(html) {
     const SCRIPT_REGEX = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
 
     // Removing the <script> tags
-    while ( SCRIPT_REGEX.test( html ) ) {
-        html = html.replace( SCRIPT_REGEX, "" );
+    while (SCRIPT_REGEX.test(html)) {
+        html = html.replace(SCRIPT_REGEX, "");
     }
 
     // Removing all events from tags...
-    html = html.replace( / on\w+="[^"]*"/g, "" );
+    html = html.replace(/ on\w+="[^"]*"/g, "");
 
     return {
         __html: html
@@ -107,7 +107,7 @@ export function removeXSSAttacks ( html ) {
  */
 export const isIEBrowser = function () {
     let sUsrAg = navigator.userAgent;
-    if ( sUsrAg.indexOf( "Trident" ) > -1 )
+    if (sUsrAg.indexOf("Trident") > -1)
         return true;
     return false;
 }
@@ -118,7 +118,7 @@ export const isIEBrowser = function () {
  */
 export const isFirefoxBrowser = function () {
     let sUsrAg = navigator.userAgent;
-    if ( sUsrAg.indexOf( "Firefox" ) > -1 )
+    if (sUsrAg.indexOf("Firefox") > -1)
         return true;
     return false;
 }
@@ -129,7 +129,15 @@ export const isFirefoxBrowser = function () {
  */
 export const isEdgeBrowser = function () {
     let sUsrAg = navigator.userAgent;
-    if ( sUsrAg.indexOf( "Edge" ) > -1 )
+    if (sUsrAg.indexOf("Edge") > -1)
         return true;
     return false;
+}
+
+
+
+export const createSlug = (inputString) => {
+    const slug = inputString.toLowerCase().replace(/\s+/g, '-');
+    //const cleanSlug = slug.replace(/[^\w-]+/g, '');
+    return slug;
 }

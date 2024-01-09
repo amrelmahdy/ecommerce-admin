@@ -8,7 +8,7 @@ import PtTable from '../../features/elements/table';
 import PNotify from '../../features/elements/p-notify';
 
 // import { getCategoriesTree, getProduct, getProducts } from '../../../api';
-import { getProducts } from '../../../api/products';
+import { deleteProduct, getProducts } from '../../../api/products';
 import { removeXSSAttacks, getCroppedImageUrl } from '../../../utils';
 import { getAllCategories, getCategories } from '../../../api/categories';
 import { getProductsList } from '../../../api/data.factory';
@@ -45,14 +45,16 @@ export default function ProductList() {
             lineHeight: 1
         },
         className: "d-block ws-nowrap",
-        accessor: d => { return { id: d.id, en_name: d.en_name, images: d.images } },
+        accessor: d => {
+            return { id: d._id, en_name: d.en_name, images: d.images, slug: d.slug }
+        },
         Cell: row => (
             <>
-                {/* {row.value.media.length ?
+                {row.value.images.length ?
                     <img
                         className="mr-1"
-                        src={getCroppedImageUrl(`${process.env.PUBLIC_URL}/mock-server/images/${row.value.media[0].copy_link}`, 150)}
-                        alt={row.value.media[0].alt_text ? row.value.media[0].alt_text : 'category'}
+                        src={`${process.env.REACT_APP_BASE_URL}/${row.value.images[0].url}`}
+                        // alt={row.value.media[0].alt_text ? row.value.images[0].alt_text : 'category'}
                         width="60"
                         height="60"
                     />
@@ -63,8 +65,8 @@ export default function ProductList() {
                         width="60"
                         height="60"
                     />
-                } */}
-                <Link to={`${process.env.PUBLIC_URL}/products/${row.value.id}`}>
+                }
+                <Link to={`${process.env.PUBLIC_URL}/products/${row.value.slug}`}>
                     <strong>{row.value.en_name}</strong>
                 </Link>
             </>
@@ -77,10 +79,10 @@ export default function ProductList() {
         Cell: row => row.value
     },
     {
-        Header: 'SKU',
-        accessor: 'sku',
+        Header: 'Vendor',
+        accessor: 'vendor',
         sortable: true,
-        Cell: row => '#' + (row.value ? row.value : '')
+        Cell: row => row.value ? row.value.ar_name : ''
     },
     {
         Header: 'Stock',
@@ -105,7 +107,7 @@ export default function ProductList() {
             overflow: "hidden",
             WebkitLineClamp: "4",
             WebkitBoxOrient: "vertical"
-        }} > {row.value ? row.value.map(cat => cat.en_name).join(', ') : ''}</span >
+        }} > {row.value ? row.value.map(cat => cat.ar_name).join(', ') : ''}</span >
     },
     //{
     //     Header: 'Tags',
@@ -129,15 +131,18 @@ export default function ProductList() {
         sortable: true
     },
     {
+        id: 'actions',
         Header: 'Actions',
-        accessor: 'id',
         className: 'actions',
         headerClassName: "justify-content-center",
         width: 100,
+        accessor: d => {
+            return { id: d._id, slug: d.slug }
+        },
         Cell: row => (
             <>
-                <Link to={`${process.env.PUBLIC_URL}/products/${row.value}`} className="on-default edit-row mr-2"><i className="fas fa-pencil-alt"></i></Link>
-                <a href="#del" className="on-default remove-row" onClick={e => deleteRow(e, row.value)}><i className="far fa-trash-alt"></i></a>
+                <Link to={`${process.env.PUBLIC_URL}/products/${row.value.slug}`} className="on-default edit-row mr-2"><i className="fas fa-pencil-alt"></i></Link>
+                <a href="#del" className="on-default remove-row" onClick={e => deleteRow(e, row.value.id)}><i className="far fa-trash-alt"></i></a>
             </>
         )
     }
@@ -151,6 +156,7 @@ export default function ProductList() {
         //     setTree(data);
         // });
     }, [])
+
 
 
     const fetchData = async (state) => {
@@ -168,7 +174,7 @@ export default function ProductList() {
             setLoading(true)
             const [prodsRes, catsRes] = await Promise.all([getProducts(), getAllCategories()]);
             if (prodsRes, catsRes) {
-                const products =  getProductsList(prodsRes, from, to, filtered, sortBy);
+                const products = getProductsList(prodsRes, from, to, filtered, sortBy);
                 setProducts(products)
                 setCategories(catsRes)
             }
@@ -184,10 +190,9 @@ export default function ProductList() {
             setLoading(true)
             const [prodsRes, catsRes] = await Promise.all([getProducts(), getAllCategories()]);
             if (prodsRes, catsRes) {
-
-                // getProductsList
-
-                setProducts(prodsRes)
+                const productsList = getProductsList(prodsRes, 0, 12, [], []);
+                console.log("productsListproductsListproductsList", productsList)
+                setProducts(productsList)
                 setCategories(catsRes)
             }
             setLoading(false)
@@ -222,15 +227,23 @@ export default function ProductList() {
         }));
     }
 
-    function deleteRow(e, index) {
+    const deleteRow = async (e, id) => {
         e.preventDefault();
 
-        // if (window.confirm("Are you sure you want to delete this data?")) {
-        //     setAjax({
-        //         ...ajax,
-        //         data: ajax.data.filter(item => item.id !== index)
-        //     });
-        // }
+        if (window.confirm("Are you sure you want to delete this data?")) {
+            try {
+                const deleted = await deleteProduct(id);
+                if (deleted) handleGetProducts();
+            } catch (err) {
+                toast(
+                    <PNotify title='Whoops' icon="fas fa-exclamation-circle" text="Something went wrong." />,
+                    {
+                        containerId: "default",
+                        className: "notification-danger"
+                    }
+                );
+            }
+        }
     }
 
     // function bulkAction(e) {
@@ -335,7 +348,7 @@ export default function ProductList() {
                                             >
                                                 <option value=''>All Category</option>
                                                 {categories.map((item, index) => (
-                                                    <option key={`cat-${index}`} value={item.slug} dangerouslySetInnerHTML={removeXSSAttacks('&ndash;'.repeat(item.depth) + item.en_name)}></option>
+                                                    <option key={`cat-${index}`} value={item.slug} dangerouslySetInnerHTML={removeXSSAttacks('&ndash;'.repeat(item.depth) + item.ar_name)}></option>
                                                 ))}
                                             </Form.Control>
                                             {/* <Form.Control

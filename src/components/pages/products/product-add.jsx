@@ -11,34 +11,37 @@ import 'react-popper-tooltip/dist/styles.css';
 
 import 'react-quill/dist/quill.snow.css';
 import ReactQuill from 'react-quill';
-
+import PtTagsInput from '../../features/elements/tags-input';
 import Breadcrumb from '../../common/breadcrumb';
 import MediaGalleryModal from '../../features/modals/media-gallery-modal';
 import PNotify from '../../features/elements/p-notify';
 import PtLazyLoad from '../../features/lazyload';
 import PtToolTip from '../../features/elements/tooltip';
 import { getCategories } from '../../../api/categories';
+import { getVendors } from '../../../api/vendors';
+
 import { addProduct } from '../../../api/products';
 import { isValidProductPayload } from '../../../api/data.factory';
 import { uploadDynamicImages } from '../../../api';
 
 export default function ProductAdd({ history }) {
-    const [error, serError] = useState([]);
-    const inputRef = useRef(null);
+    const [error, setError] = useState([]);
+    const enTagsInputRef = useRef(null);
+    const arTagsInputRef = useRef(null);
     const [validated, setValidated] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const [arName, setArName] = useState("");
     const [enName, setEnName] = useState("");
     const [slug, setSlug] = useState("");
-    const [price, setPrice] = useState(0);
+    const [price, setPrice] = useState();
     const [salePrice, setSalePrice] = useState(0);
     const [enDescription, setEnDescription] = useState("");
     const [arDescription, setArDescription] = useState("");
-    const [stock, setStock] = useState(10);
+    const [stock, setStock] = useState();
     const [arSubtitle, setArSubtitle] = useState("");
     const [enSubtitle, setEnSubtitle] = useState("");
-    const [promotionArTitle, serPromotionArTitle] = useState("");
+    const [promotionArTitle, setPromotionArTitle] = useState("");
     const [promotionEnTitle, setPromotionEnTitle] = useState("");
     const [maxQuantity, setMaxQuantity] = useState(10);
     const [sku, setSku] = useState("");
@@ -49,91 +52,27 @@ export default function ProductAdd({ history }) {
     const [isFeatured, setIsFeatured] = useState(false);
     const [productCats, setProductCats] = useState([]);
     const [productImages, setProductImages] = useState([]);
+    const [arTags, setArTags] = useState([]);
+    const [enTags, setEnTags] = useState([]);
+    const [vendor, setVendor] = useState(null);
 
     const [images, setImages] = useState([]);
 
-    // console.log("arName",arName)
-    // console.log("enName", enName)
-    // console.log("slug", slug)
-    // console.log("price", price)
-    // console.log("salePrice", salePrice)
-    // console.log("enDescription", enDescription)
-    console.log("arDescription", arDescription)
-    // console.log("stock", stock)
-    // console.log("arSubtitle", arSubtitle)
-    // console.log("enSubtitle", enSubtitle)
-    // console.log("promotionArTitle", promotionArTitle)
-    // console.log("promotionEnTitle", promotionEnTitle)
-    // console.log("maxQuantity", maxQuantity)
-    // console.log("sku", sku)
-    // console.log("isOutOfStock", isOutOfStock)
-    // console.log("requireShipping", requireShipping)
-    // console.log("isTaxable", isTaxable)
-    // console.log("isOnSale", isOnSale)
-    // console.log("isFeatured", isFeatured)
-    // console.log("productCats", productCats)
 
 
-
-
-    const [defaultImage, setDefault] = useState(1);
     const [categories, setCategories] = useState([]);
-    const [files, setFiles] = useState([]);
+    const [vendors, setVendors] = useState([]);
     const [modalOpen, setModalOpen] = useState(false);
-    const [openImage, setOpenImage] = useState(false);
     const [onlyOneImage, SetOnlyOneImage] = useState(false);
-    const [attrs, setAttrs] = useState([]);
-    const [selectedAttr, setSelectedAttr] = useState('');
-    const [attrsForVariation, setAttrsForVariation] = useState([]);
-    const [variants, setVariants] = useState([]);
-    const [variation, setVariation] = useState([]);
 
 
-    const attrsForVariationUpdate = useCallback((e) => {
-        e.preventDefault();
-        let filtered = attrs.filter(attr => attr.usedForVariation && attr.selectedTerms.length);
-        filtered = filtered.map(attr => {
-            return {
-                ...attr,
-                terms: attr.terms.filter(term => attr.selectedTerms.find(selected => term.slug === selected.value))
-            }
-        });
-        setAttrsForVariation(filtered);
-        setVariation(new Array(filtered.length).fill(''));
-        setVariants(variants.map(variant => {
-            return {
-                ...variant,
-                excerpt: Object.assign([], filtered.map(attr => {
-                    return {
-                        attrId: attr.id,
-                        termId: ''
-                    };
-                }), variant.excerpt)
-            }
-        }));
-    }, [attrs, variants])
 
-    // Product Attributes, Tags, Categories
-    const [productTags, setProductTags] = useState([]);
-    const [productAttrs, setProductAttrs] = useState([]);
-    // const [productCats, setProductCats] = useState([]);
-    const [taxTypes, setTaxTypes] = useState([]);
+
+
 
     useEffect(() => {
         fetchCategories()
-        // getAttributes().then(response => {
-        //     setProductAttrs(response.data);
-        //     setSelectedAttr(response.data[0].slug);
-        // });
-        // getCategories('products').then(response => {
-        //     setProductCats(getTreeData(response.data));
-        // });
-        // getTags('products').then(response => {
-        //     setProductTags(response.data);
-        // });
-        // getTaxTypes().then(response => {
-        //     setTaxTypes(response.data);
-        // });
+        fetchVendors()
     }, [])
 
     const fetchCategories = async () => {
@@ -145,25 +84,21 @@ export default function ProductAdd({ history }) {
         }
     }
 
-    // async function searchProducts(input) {
-    //     let options = [];
-    //     await getProducts(0, undefined, [{ id: 'name', value: input }], null).then(response => {
-    //         options = response.data.map(product => {
-    //             return {
-    //                 label: product.name,
-    //                 value: product.id
-    //             }
-    //         });
-    //     }).catch(error => console.error(error));
-    //     return options;
-    // }
+    const fetchVendors = async () => {
+        try {
+            const vendors = await getVendors();
+            setVendors(vendors)
+        } catch (error) {
+            console.log("error fetching categories", error)
+        }
+    }
 
     function getTreeData(data) {
         let result = [];
         result = data.reduce((acc, cur) => {
             let newNode = {
                 key: cur.id,
-                title: cur.en_name,
+                title: cur.ar_name,
                 children: []
             };
             acc.push(newNode);
@@ -172,17 +107,14 @@ export default function ProductAdd({ history }) {
         return result;
     }
 
-    console.log(validated)
-
     async function handleAddProduct(e) {
         e.preventDefault();
         if (e.currentTarget.checkValidity() === false) {
             e.stopPropagation();
+            window.scrollTo(0, 0)
+
         }
         setValidated(true);
-
-        //setLoading(true);
-
         const newProduct = {
             ar_name: arName,
             en_name: enName,
@@ -198,6 +130,9 @@ export default function ProductAdd({ history }) {
             promotion_ar_title: promotionArTitle,
             promotion_en_title: promotionEnTitle,
             stock: parseInt(stock),
+            vendor,
+            ar_tags: arTags,
+            en_tags: enTags,
             categories: productCats,
             is_out_of_stock: isOutOfStock,
             is_taxable: isTaxable,
@@ -206,22 +141,18 @@ export default function ProductAdd({ history }) {
             is_featured: isFeatured,
             images: []
         }
-
-
-
         const isValidPayload = isValidProductPayload(newProduct);
         if (isValidPayload) {
-            if (productImages.length > 0) {
-                const images = await uploadDynamicImages(productImages);
-                console.log("uploaded imageeeeeessssss", images, images && images.length > 0)
-                if (images && images.length > 0) newProduct.images = images
-            }
-
-
+            setLoading(true);
             try {
-                const productCreated = await addProduct(newProduct);
-                if (productCreated) {
+                if (productImages.length > 0) {
+                    const images = await uploadDynamicImages(productImages, `products/${newProduct.slug}`);
+                    if (images && images.length > 0) newProduct.images = images
+                }
 
+                const productCreated = await addProduct(newProduct);
+                setLoading(false);
+                if (productCreated) {
                     toast(
                         <PNotify title="Success" icon="fas fa-check" text="Product added successfully." />,
                         {
@@ -232,16 +163,26 @@ export default function ProductAdd({ history }) {
                     history.push("/products")
                 }
             } catch (error) {
+                console.log("error.response", error.response)
+                setLoading(false);
                 window.scrollTo(0, 0)
-                if (error.response.status === 400) {
-                    serError(error.response.data.message)
-                } else if (error.response.status === 409) {
-                    serError([error.response.data.message])
-
+                if(Array.isArray(error.response.data.message)){
+                    setError(error.response.data.message)
+                } else {
+                    setError([error.response.data.message])
                 }
+                // if(typeof )
+                // if (error.response.status === 400) {
+
+                //     //setError(error.response.data.message)
+                // } else if (error.response.status === 409) {
+                //     console.log("error.response", error.response.data)
+                //     //setError([error.response.data.message])
+
+                // }
             }
         } else {
-            serError(['Please fill in the required fields with the red *'])
+            setError(['Please fill in the required fields with the red *'])
         }
     }
 
@@ -252,45 +193,8 @@ export default function ProductAdd({ history }) {
     }
 
     function chooseMedia(selectedMedia) {
-        console.log("selectedMediaselectedMedia>>>>>:::::", selectedMedia.length)
         setImages(selectedMedia)
         setModalOpen(false);
-        // if (!selectedMedia.length) return;
-        // if (modalOpen.type === 'gallery') {
-        //     setImages([...images, ...selectedMedia]);
-        // } else if (modalOpen.type === 'file') {
-        //     let id = modalOpen.id;
-        //     setFiles(files.map((file, index) => {
-        //         if (index === id) {
-        //             return {
-        //                 name: selectedMedia[0].name,
-        //                 url: selectedMedia[0].copy_link
-        //             }
-        //         }
-        //         return file;
-        //     }));
-        // } else if (modalOpen.type === 'variant') {
-        //     let id = modalOpen.id[0];
-        //     let fileId = modalOpen.id[1];
-        //     setVariants(variants.map((variant, index) => {
-        //         if (index === id) {
-        //             if (typeof fileId === 'number') {
-        //                 variant.files = variant.files.map((file, fileIndex) => {
-        //                     if (fileIndex === fileId) {
-        //                         return {
-        //                             name: selectedMedia[0].name,
-        //                             url: selectedMedia[0].copy_link
-        //                         }
-        //                     }
-        //                     return file;
-        //                 })
-        //             } else {
-        //                 variant.media = selectedMedia;
-        //             }
-        //         }
-        //         return variant;
-        //     }))
-        // }
     }
 
 
@@ -298,205 +202,14 @@ export default function ProductAdd({ history }) {
         setProductImages(files)
     }
 
-    console.log("UUUUUUUUUU", productImages)
 
-    function selectDefaultImage(e, id) {
-        e.target.checked && setDefault(id);
+    function addArTags(tags) {
+        setArTags(tags)
     }
 
-    function removeImage(e, index) {
-        e.preventDefault();
-        setImages(images.filter(image => image.id !== index));
+    function addEnTags(tags) {
+        setEnTags(tags)
     }
-
-    function addTag(e, tag) {
-        e.preventDefault();
-        inputRef.current.addTag(tag);
-    }
-
-    function addFile(e) {
-        e.preventDefault();
-        setFiles([
-            ...files,
-            {
-                name: '',
-                url: ''
-            }
-        ]);
-    }
-
-    function removeFile(index) {
-        setFiles(files.filter((file, id) => id !== index));
-    }
-
-    function fileNameChange(e, index) {
-        setFiles(files.map((file, id) => {
-            if (id === index) {
-                return {
-                    ...file,
-                    name: e.target.value
-                };
-            }
-            return file;
-        }));
-    }
-
-    function filePathChange(e, index) {
-        setFiles(files.map((file, id) => {
-            if (id === index) {
-                return {
-                    ...file,
-                    url: e.target.value
-                };
-            }
-            return file;
-        }));
-    }
-
-    function addAttr(e) {
-        e.preventDefault();
-        if (attrs.find(attr => attr.slug === selectedAttr)) {
-            return;
-        }
-        let attr = productAttrs.find(attr => attr.slug === selectedAttr);
-        setAttrs([
-            ...attrs,
-            {
-                ...attr,
-                showOnProductPage: false,
-                usedForVariation: false,
-                selectedTerms: []
-            }
-        ]);
-    }
-
-    function removeAttr(e, slug) {
-        e.preventDefault();
-        setAttrs(attrs.filter(attr => attr.slug !== slug));
-    }
-
-    function changeAttr(index, key, value) {
-        setAttrs(attrs.map((attr, id) => {
-            if (id === index) {
-                attr[key] = value;
-            }
-            return attr;
-        }));
-    }
-
-    function variationChange(e, index) {
-        setVariation(variation.map((variation, id) => {
-            if (id === index) {
-                return e.target.value;
-            }
-            return variation;
-        }));
-    }
-
-    function addVariant(e) {
-        e.preventDefault();
-        setVariants([
-            ...variants,
-            {
-                saleSchedule: false,
-                virtual: false,
-                downloadable: false,
-                manageStock: false,
-                files: [],
-                media: [],
-                excerpt: attrsForVariation.map((attr, id) => {
-                    return {
-                        attrId: attr.id,
-                        termId: variation[id]
-                    }
-                }),
-                taxType: ''
-            }
-        ]);
-    }
-
-    function removeVariant(e, index) {
-        e.preventDefault();
-        setVariants(variants.filter((variant, id) => id !== index));
-    }
-
-    function variantTermChange(e, index, attrIndex) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                return {
-                    ...variant,
-                    excerpt: variant.excerpt.map((attr, attrId) => {
-                        if (attrId === attrIndex) {
-                            return {
-                                attrId: attr.id,
-                                termId: e.target.value === '' ? '' : parseInt(e.target.value)
-                            };
-                        }
-                        return attr;
-                    })
-                }
-            }
-            return variant;
-        }))
-    }
-
-    function variantItemChange(index, key, value) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant[key] = value;
-            }
-            return variant;
-        }));
-    }
-
-    function variantFileChange(index, fileIndex, key, value) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files = variant.files.map((file, fileId) => {
-                    if (fileId === fileIndex) {
-                        file[key] = value;
-                    }
-                    return file;
-                })
-            }
-            return variant;
-        }));
-    }
-
-    function addVariantFile(e, index) {
-        e.preventDefault();
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files.push({
-                    name: '',
-                    url: ''
-                });
-            }
-            return variant;
-        }));
-    }
-
-    function removeVariantFile(index, fileIndex) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files.splice(fileIndex, 1);
-            }
-            return variant;
-        }));
-    }
-
-    function openLightBox(index) {
-        setOpenImage(index);
-    }
-
-    function closeLightBox() {
-        setOpenImage(false);
-    }
-
-
-    console.log("PPPPPPPP", error)
-
-
 
     return (
         <>
@@ -638,7 +351,7 @@ export default function ProductAdd({ history }) {
                                                                     className="form-control-modern"
                                                                     name="promotional_arabic_title"
                                                                     value={promotionArTitle}
-                                                                    onChange={e => serPromotionArTitle(e.target.value)}
+                                                                    onChange={e => setPromotionArTitle(e.target.value)}
                                                                 />
 
                                                             </Col>
@@ -680,6 +393,24 @@ export default function ProductAdd({ history }) {
                                                         </Form.Group>
 
 
+                                                        <Form.Group as={Row}>
+                                                            <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0 mb">
+                                                                Vendor
+                                                            </Col>
+                                                            <Col lg={7} xl={8}>
+                                                                <Form.Control as="select" required className="form-control-modern" value={vendor} onChange={e => setVendor(e.target.value)} >
+                                                                    <option value="">Choose a Vendor</option>
+
+                                                                    {
+                                                                        vendors.length && vendors.map((vend, index) => {
+                                                                            return <option key={vend.id + index} value={vend.id}>{vend.ar_name}</option>
+                                                                        })
+                                                                    }
+                                                                </Form.Control>
+                                                            </Col>
+                                                        </Form.Group>
+
+
 
                                                         <Form.Group as={Row}>
                                                             <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0 mb">
@@ -701,8 +432,11 @@ export default function ProductAdd({ history }) {
                                                                     className="form-control-modern"
                                                                     name="stock"
                                                                     value={stock}
+                                                                    required
                                                                     onChange={e => setStock(e.target.value)}
                                                                 />
+                                                                <Form.Control.Feedback type="invalid">This field is required.</Form.Control.Feedback>
+
                                                             </Col>
                                                         </Form.Group>
 
@@ -713,7 +447,7 @@ export default function ProductAdd({ history }) {
                                                             </Col>
                                                             <Col lg={7} xl={8}>
                                                                 <Form.Control
-                                                                    type="text"
+                                                                    type="number"
                                                                     className="form-control-modern"
                                                                     name="price"
                                                                     required
@@ -733,7 +467,7 @@ export default function ProductAdd({ history }) {
                                                             </Col>
                                                             <Col lg={7} xl={8}>
                                                                 <Form.Control
-                                                                    type="text"
+                                                                    type="number"
                                                                     className="form-control-modern"
                                                                     name="sale_price"
                                                                     value={salePrice}
@@ -846,6 +580,18 @@ export default function ProductAdd({ history }) {
                                                                     onCheck={keys => setProductCats(keys)}
                                                                 />
                                                             </Form.Control>
+                                                        </Form.Group>
+
+
+                                                        <Form.Group>
+                                                            <Form.Label className="control-label text-lg-right pt-2 mt-1 mb-2">Arabic Tags</Form.Label>
+                                                            <PtTagsInput ref={arTagsInputRef} onChange={addArTags} />
+
+                                                        </Form.Group>
+
+                                                        <Form.Group>
+                                                            <Form.Label className="control-label text-lg-right pt-2 mt-1 mb-2">English Tags</Form.Label>
+                                                            <PtTagsInput ref={enTagsInputRef} onChange={addEnTags} />
                                                         </Form.Group>
 
                                                     </Col>

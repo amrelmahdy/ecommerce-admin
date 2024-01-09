@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Form, Button } from 'react-bootstrap';
+import { Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 
 import Breadcrumb from '../../common/breadcrumb';
@@ -9,10 +9,10 @@ import Loader from '../../features/loader';
 import PNotify from '../../features/elements/p-notify';
 import PtFileUpload from '../../features/elements/file-upload';
 import { getCategory, getCategories, updateCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
+import { uploadDynamicImages } from '../../../api';
 
 export default function CategoriesEdit({ history, ...props }) {
-
-    console.log("props", props)
+    const [error, setError] = useState([]);
 
     const [cat, setCat] = useState(null);
     const [categories, setCategories] = useState([]);
@@ -52,8 +52,9 @@ export default function CategoriesEdit({ history, ...props }) {
 
         try {
             if (imageFile) {
-                const imagePath = await uploadCategoryImage(imageFile);
-                cat.image = imagePath.data;
+                const images = await uploadDynamicImages([imageFile], `categories/${cat.slug}`);
+                const imagePath = images[0];
+                cat.image = imagePath.url;
             }
             const updated = await updateCategory(props.match.params.id, cat);
             if (updated) {
@@ -74,21 +75,13 @@ export default function CategoriesEdit({ history, ...props }) {
                     }
                 );
             }
-        } catch (err) {
-            let title = "Whoops"
-            let message = "Something went wrong please try again later"
-            if (err.response.status == 409) {
-                title = "Conflict"
-                message = err.response.data.message
+        } catch (error) {
+            window.scrollTo(0, 0)
+            if (Array.isArray(error.response.data.message)) {
+                setError(error.response.data.message)
+            } else {
+                setError([error.response.data.message])
             }
-
-            toast(
-                <PNotify title={title} icon="fas fa-exclamation-circle" text={message} />,
-                {
-                    containerId: "default",
-                    className: "notification-danger"
-                }
-            );
         }
 
 
@@ -170,6 +163,11 @@ export default function CategoriesEdit({ history, ...props }) {
                                                     <p className="card-big-info-desc">Add here the category description with all details and necessary information.</p>
                                                 </Col>
                                                 <Col lg="3-5" xl="4-5">
+                                                    {
+                                                        error.map(err => <Alert key="danger" variant="danger">
+                                                            {err}
+                                                        </Alert>)
+                                                    }
                                                     <Form.Group as={Row} className="align-items-center">
                                                         <Col as={Form.Label} lg={5} xl={3} className="control-label text-lg-right mb-lg-0">Arabic Name</Col>
                                                         <Col lg={7} xl={6}>
@@ -207,6 +205,7 @@ export default function CategoriesEdit({ history, ...props }) {
                                                                 type="text"
                                                                 className="form-control-modern"
                                                                 maxLength="50"
+                                                                disabled
                                                                 name="slug"
                                                                 value={cat.slug}
                                                                 onChange={e => setCat({ ...cat, slug: e.target.value })}

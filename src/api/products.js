@@ -24,5 +24,20 @@ export const getRelatedProducts = async (id) => {
     
 }
 
+export const updateProduct = async (id, product) => {
+    const { data } = await httpClient.put(`products/${id}`, product)
+    return data
+    
+}
+
+
+export const deleteProduct = async (id) => {
+    const { data } = await httpClient.delete(`products/${id}`)
+    return data
+    
+}
+
+
+
 
 

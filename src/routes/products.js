@@ -30,7 +30,7 @@ export default function ProductPages () {
             <Route exact path={ `${ process.env.PUBLIC_URL }/products/reviews` } component={ ReviewList } />
             <Route exact path={ `${ process.env.PUBLIC_URL }/products/reviews/:id` } component={ ReviewDetail } />
 
-            <Route exact path={ `${ process.env.PUBLIC_URL }/products/:id` } component={ ProductDetail } />
+            <Route exact path={ `${ process.env.PUBLIC_URL }/products/:slug` } component={ ProductDetail } />
         </Switch>
     )
 }

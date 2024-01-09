@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Row, Col, Card, Form, Button, InputGroup } from 'react-bootstrap';
+import { Row, Col, Card, Form, Button, InputGroup, Alert } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import Breadcrumb from '../../common/breadcrumb';
 import PtTable from '../../features/elements/table';
@@ -11,8 +11,11 @@ import PtFileUpload from '../../features/elements/file-upload';
 import { getCategories, addCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
 import { removeXSSAttacks } from '../../../utils';
 import { getCategoriesList } from '../../../api/data.factory';
+import { uploadDynamicImages } from '../../../api';
 
 export default function CategoriesList(props) {
+    const [error, setError] = useState([]);
+
     const type = props.type;
     const [loading, setLoading] = useState(true);
     const [ajax, setAjax] = useState({
@@ -218,8 +221,9 @@ export default function CategoriesList(props) {
         if (parent != 0) newCat.parent = parent
         try {
             if (imageFile) {
-                const imagePath = await uploadCategoryImage(imageFile);
-                newCat.image = imagePath.data;
+                const images = await uploadDynamicImages([imageFile], `categories/${slug}`);
+                const imagePath = images[0];
+                newCat.image = imagePath.url;
             }
             const created = await addCategory(newCat);
 
@@ -252,21 +256,13 @@ export default function CategoriesList(props) {
                     }
                 );
             }
-        } catch (err) {
-            let title = "Whoops"
-            let message = "Something went wrong please try again later"
-            if (err.response.status == 409) {
-                title = "Conflict"
-                message = err.response.data.message
+        } catch (error) {
+            window.scrollTo(0, 0)
+            if(Array.isArray(error.response.data.message)){
+                setError(error.response.data.message)
+            } else {
+                setError([error.response.data.message])
             }
-
-            toast(
-                <PNotify title={title} icon="fas fa-exclamation-circle" text={message} />,
-                {
-                    containerId: "default",
-                    className: "notification-danger"
-                }
-            );
         }
     }
 
@@ -319,6 +315,11 @@ export default function CategoriesList(props) {
 
             <Row>
                 <Col xl={4}>
+                    {
+                        error.map(err => <Alert key="danger" variant="danger">
+                            {err}
+                        </Alert>)
+                    }
                     <Form method="post" action="#" onSubmit={handleAddCategory}>
                         <Card className="card-modern">
                             <Card.Body>
