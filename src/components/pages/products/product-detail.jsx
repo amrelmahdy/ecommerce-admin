@@ -285,7 +285,7 @@ export default function ProductDetail({ history, ...props }) {
             en_subtitle: enSubtitle,
             slug: slug,
             sku: sku,
-            price: parseInt(),
+            price: parseInt(price),
             sale_price: parseInt(salePrice),
             max_quantity: parseInt(maxQuantity),
             en_description: enDescription,
