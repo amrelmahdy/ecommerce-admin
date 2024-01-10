@@ -229,11 +229,19 @@ export default function ProductList() {
 
     const deleteRow = async (e, id) => {
         e.preventDefault();
-
         if (window.confirm("Are you sure you want to delete this data?")) {
             try {
                 const deleted = await deleteProduct(id);
-                if (deleted) handleGetProducts();
+                if (deleted) {
+                    handleGetProducts();
+                    toast(
+                        <PNotify title="Success" icon="fas fa-check" text={`Product deleted successfully.`} />,
+                        {
+                            containerId: "default",
+                            className: "notification-success"
+                        }
+                    );
+                }
             } catch (err) {
                 toast(
                     <PNotify title='Whoops' icon="fas fa-exclamation-circle" text="Something went wrong." />,

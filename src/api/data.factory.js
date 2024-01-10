@@ -83,6 +83,7 @@ export const isValidProductPayload = payload => {
         payload.en_name !== "" &&
         payload.ar_description !== "" &&
         payload.en_description !== "" &&
+        payload.vendor &&
         typeof payload.stock === 'number' && payload.stock > 0) {
         return true
     }

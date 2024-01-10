@@ -29,10 +29,10 @@ import { getCategories, getCategory } from '../../../api/categories';
 import { getVendors } from '../../../api/vendors';
 import { isValidProductPayload } from '../../../api/data.factory';
 
-export default function ProductDetail({history, ...props}) {
+export default function ProductDetail({ history, ...props }) {
     const enTagsInputRef = useRef(null);
     const arTagsInputRef = useRef(null);
-    const [error, serError] = useState([]);
+    const [error, setError] = useState([]);
     const [validated, setValidated] = useState(false);
 
     const [loading, setLoading] = useState(true);
@@ -156,7 +156,7 @@ export default function ProductDetail({history, ...props}) {
         setSku(productDetails.sku)
         setEnDescription(productDetails.en_description)
         setArDescription(productDetails.ar_description)
-        setVendor(productDetails.vendor)
+        setVendor(productDetails.vendor ? productDetails.vendor.id : null)
         setStock(productDetails.stock)
         setPrice(productDetails.price)
         setSalePrice(productDetails.sale_price)
@@ -327,8 +327,38 @@ export default function ProductDetail({history, ...props}) {
                 }
 
             } catch (error) {
-
+                setLoading(false);
+                window.scrollTo(0, 0)
+                if(Array.isArray(error.response.data.message)){
+                    setError(error.response.data.message)
+                } else {
+                    setError([error.response.data.message])
+                }
             }
+        }
+    }
+
+
+    const handleOnPublishProduct = async (e) => {
+        e.preventDefault();
+        const status = product.is_published;
+        const successMessage = status ? 'unPublihed' : 'published'
+        setLoading(true);
+        try {
+            const productPublished = await updateProduct(product._id, { is_published: !product.is_published });
+            setLoading(false);
+            if (productPublished) {
+                fetchData()
+                toast(
+                    <PNotify title="Success" icon="fas fa-check" text={`Product ${successMessage} successfully.`} />,
+                    {
+                        containerId: "default",
+                        className: "notification-success"
+                    }
+                );
+            }
+        } catch (error) {
+            setLoading(false);
         }
     }
 
@@ -950,7 +980,7 @@ export default function ProductDetail({history, ...props}) {
                                                         </Col>
                                                     </Form.Group>
 
-                                                   
+
 
 
 
@@ -984,7 +1014,7 @@ export default function ProductDetail({history, ...props}) {
 
                                                     <Form.Group>
                                                         <Form.Label className="control-label text-lg-right pt-2 mt-1 mb-2">English Tags</Form.Label>
-                                                        <PtTagsInput value={product.ar_tags} ref={enTagsInputRef} onChange={addEnTags} />
+                                                        <PtTagsInput value={product.en_tags} ref={enTagsInputRef} onChange={addEnTags} />
                                                     </Form.Group>
 
                                                 </Col>
@@ -2009,10 +2039,11 @@ export default function ProductDetail({history, ...props}) {
 
                         <Col md="auto" className="col-12">
                             <Button
-                                type="submit"
+                                //type="submit"
+                                onClick={handleOnPublishProduct}
                                 className="btn-px-4 py-3 d-flex align-items-center font-weight-semibold line-height-1"
-                                variant="primary"
-                            ><i className="bx bx-save text-4 mr-2"></i>Publish Product</Button>
+                                variant="secondary"
+                            ><i className="bx bx-save text-4 mr-2"></i>{product.is_published ? "unPublish Product" : "Publish Product"}  </Button>
                         </Col>
 
                         <Col md="auto" className="col-12">
