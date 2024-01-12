@@ -297,13 +297,14 @@ export default function ProductDetail({ history, ...props }) {
             ar_tags: arTags,
             en_tags: enTags,
             categories: productCats,
-            is_out_of_stock: isOutOfStock,
-            is_taxable: isTaxable,
-            is_on_sale: isOnSale,
-            require_shipping: requireShipping,
-            is_featured: isFeatured,
+            is_out_of_stock: Boolean(isOutOfStock),
+            is_taxable: Boolean(isTaxable),
+            is_on_sale: Boolean(isOnSale),
+            require_shipping: Boolean(requireShipping),
+            is_featured: Boolean(isFeatured),
             images
         }
+
         const isValidPayload = isValidProductPayload(newProduct);
         if (isValidPayload) {
             setLoading(true);
