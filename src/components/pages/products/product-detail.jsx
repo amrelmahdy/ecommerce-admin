@@ -349,7 +349,6 @@ export default function ProductDetail({ history, ...props }) {
             const productPublished = await updateProduct(product._id, { is_published: !product.is_published });
             setLoading(false);
             if (productPublished) {
-                fetchData()
                 toast(
                     <PNotify title="Success" icon="fas fa-check" text={`Product ${successMessage} successfully.`} />,
                     {
@@ -357,6 +356,8 @@ export default function ProductDetail({ history, ...props }) {
                         className: "notification-success"
                     }
                 );
+                history.push("/products")
+
             }
         } catch (error) {
             setLoading(false);

@@ -13106,6 +13106,7 @@ html.ie11 .scroll-to-top {
     flex-wrap: wrap;
     white-space: normal;
     padding: 0.75rem 0.75rem;
+    justify-content: center;
 }
 
 .ReactTable.table-ecommerce-simple .-pagination .-next,

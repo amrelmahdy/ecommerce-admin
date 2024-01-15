@@ -19,6 +19,11 @@ export default function ProductList() {
         data: [],
         total: 0
     });
+    const pageSize = 10;
+    const totalPages = Math.ceil(products.total / pageSize)
+
+
+
     const [categories, setCategories] = useState([]);
     const [ajax, setAjax] = useState({
         data: [],
@@ -120,9 +125,20 @@ export default function ProductList() {
         accessor: 'is_featured',
         sortable: true,
         Cell: row => (
-            <a href="#featuredToggle" onClick={e => featuredToggle(e, row.original.id, !row.value)}>
+            <div className='center'>
                 <i className={`${row.value ? 'fas' : 'far'} fa-star`}></i>
-            </a>
+            </div>
+
+        )
+    },
+    {
+        Header: 'Published',
+        accessor: 'is_published',
+        sortable: true,
+        Cell: row => (
+            <div>
+                <i className={`fa ${row.value ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+            </div>
         )
     },
     {
@@ -166,7 +182,6 @@ export default function ProductList() {
 
         setLoading(true);
 
-        // state.page * state.pageSize, (state.page + 1) * state.pageSize, filtered, state.sorted
         const from = state.page * state.pageSize;
         const to = (state.page + 1) * state.pageSize
         const sortBy = state.sorted
@@ -174,7 +189,7 @@ export default function ProductList() {
             setLoading(true)
             const [prodsRes, catsRes] = await Promise.all([getProducts(), getAllCategories()]);
             if (prodsRes, catsRes) {
-                const products = getProductsList(prodsRes, from, to, filtered, sortBy);
+                const products = getProductsList(prodsRes.products, from, to, filtered, sortBy);
                 setProducts(products)
                 setCategories(catsRes)
             }
@@ -190,7 +205,7 @@ export default function ProductList() {
             setLoading(true)
             const [prodsRes, catsRes] = await Promise.all([getProducts(), getAllCategories()]);
             if (prodsRes, catsRes) {
-                const productsList = getProductsList(prodsRes, 0, 12, [], []);
+                const productsList = getProductsList(prodsRes, 0, pageSize, [], []);
                 console.log("productsListproductsListproductsList", productsList)
                 setProducts(productsList)
                 setCategories(catsRes)
@@ -402,11 +417,11 @@ export default function ProductList() {
                                 data={products.data}
                                 loading={loading}
                                 columns={columns}
-                                pages={products.length}
-                                pageSize={12}
+                                pages={totalPages}
+                                pageSize={pageSize}
                                 manual
                                 onFetchData={fetchData}
-                                selectAll={selectAll}
+                                // selectAll={selectAll}
                                 // toggleAll={() => setSelectAll(!selectAll)}
                                 isSelected={key => isSelected(key)}
                                 toggleSelection={onSelectChange}
