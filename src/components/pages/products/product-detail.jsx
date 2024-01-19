@@ -314,7 +314,7 @@ export default function ProductDetail({ history, ...props }) {
                     const uploadedImages = await uploadDynamicImages(productImages, `products/${newProduct.slug}`);
                     if (images && images.length > 0) newProduct.images = [...oldImages, ...uploadedImages];
                 }
-                const productUpdated = await updateProduct(product._id, newProduct);
+                const productUpdated = await updateProduct(product.id, newProduct);
                 setLoading(false);
                 if (productUpdated) {
                     toast(
@@ -346,7 +346,7 @@ export default function ProductDetail({ history, ...props }) {
         const successMessage = status ? 'unPublihed' : 'published'
         setLoading(true);
         try {
-            const productPublished = await updateProduct(product._id, { is_published: !product.is_published });
+            const productPublished = await updateProduct(product.id, { is_published: !product.is_published });
             setLoading(false);
             if (productPublished) {
                 toast(
