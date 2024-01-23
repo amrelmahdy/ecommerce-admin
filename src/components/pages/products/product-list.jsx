@@ -58,7 +58,7 @@ export default function ProductList() {
                 {row.value.images.length ?
                     <img
                         className="mr-1"
-                        src={`${process.env.REACT_APP_BASE_URL}/${row.value.images[0].url}`}
+                        src={row.value.images[0].url}
                         // alt={row.value.media[0].alt_text ? row.value.images[0].alt_text : 'category'}
                         width="60"
                         height="60"
@@ -71,7 +71,7 @@ export default function ProductList() {
                         height="60"
                     />
                 }
-                <Link to={`${process.env.PUBLIC_URL}/products/${row.value.slug}`}>
+            <Link to={`${process.env.PUBLIC_URL}/products/${row.value.slug}`}>
                     <strong>{row.value.en_name}</strong>
                 </Link>
             </>
@@ -153,7 +153,7 @@ export default function ProductList() {
         headerClassName: "justify-content-center",
         width: 100,
         accessor: d => {
-            return { id: d._id, slug: d.slug }
+            return { id: d.id, slug: d.slug }
         },
         Cell: row => (
             <>
@@ -205,8 +205,8 @@ export default function ProductList() {
             setLoading(true)
             const [prodsRes, catsRes] = await Promise.all([getProducts(), getAllCategories()]);
             if (prodsRes, catsRes) {
-                const productsList = getProductsList(prodsRes, 0, pageSize, [], []);
-                console.log("productsListproductsListproductsList", productsList)
+                const productsList = getProductsList(prodsRes.products, 0, pageSize, [], []);
+                console.log(productsList)
                 setProducts(productsList)
                 setCategories(catsRes)
             }

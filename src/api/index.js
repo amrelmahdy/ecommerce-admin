@@ -2,7 +2,6 @@ import axios from 'axios';
 
 import { getCategoryTree } from '../utils';
 import { httpClient } from './http';
-import { error } from 'bfj/src/events';
 
 const API_URL = process.env.PUBLIC_URL;
 
@@ -17,6 +16,29 @@ export const uploadDynamicImages = async (images, path) => {
     const { data } = await httpClient.post(`dynamic-upload-multiple-files`, formData)
     return data
 }
+
+
+export const uploadCloudImages = async (images, path) => {
+    const formData = new FormData();
+    images.forEach(image => {
+        formData.append('files', image, image.name);
+    })
+    if (path) formData.append('path', path);
+    const { data } = await httpClient.post(`cloudinary/upload-multiple-files`, formData)
+    return data
+}
+
+
+export const deleteCloudImage = async (publicId) => {
+    console.log("publicId", publicId)
+    const { data } = await httpClient.delete(`cloudinary/delete-file`, {
+        data: {
+            publicId
+        }
+    })
+    return data
+}
+
 
 
 

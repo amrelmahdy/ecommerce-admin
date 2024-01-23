@@ -9,11 +9,10 @@ import Loader from '../../features/loader';
 import PNotify from '../../features/elements/p-notify';
 import PtFileUpload from '../../features/elements/file-upload';
 import { getCategory, getCategories, updateCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
-import { uploadDynamicImages } from '../../../api';
+import { deleteCloudImage, uploadCloudImages, uploadDynamicImages } from '../../../api';
 
 export default function CategoriesEdit({ history, ...props }) {
     const [error, setError] = useState([]);
-
     const [cat, setCat] = useState(null);
     const [categories, setCategories] = useState([]);
     const [parent, setParent] = useState(0);
@@ -52,13 +51,18 @@ export default function CategoriesEdit({ history, ...props }) {
 
         try {
             if (imageFile) {
-                const images = await uploadDynamicImages([imageFile], `categories/${cat.slug}`);
-                const imagePath = images[0];
-                cat.image = imagePath.url;
+                // destroy old image 
+                if (cat.image && cat.image.public_id) {
+                    await deleteCloudImage(cat.image.public_id);
+                }
+                const images = await uploadCloudImages([imageFile], `categories`);
+                const image = images[0];
+                cat.image = image;
             }
+            console.log(cat);
             const updated = await updateCategory(props.match.params.id, cat);
             if (updated) {
-                history.push("/products/categories")
+                //history.push("/products/categories")
                 toast(
                     <PNotify title="Success" icon="fas fa-check" text="Category saved successfully." />,
                     {
@@ -94,13 +98,11 @@ export default function CategoriesEdit({ history, ...props }) {
 
 
 
-
-
-
     const deleteConfirm = async (result) => {
         setOpenModal(false);
         try {
             const deleted = await deleteCategory(props.match.params.id);
+            console.log("deleted", deleted)
             if (deleted) {
                 history.push("/products/categories")
             } else {
@@ -279,7 +281,7 @@ export default function CategoriesEdit({ history, ...props }) {
                                                                     />
                                                                 } */}
                                                                 <img
-                                                                    src={`${process.env.REACT_APP_BASE_URL}/${cat.image}`}
+                                                                    src={cat.image.url}
                                                                     alt="category"
                                                                     width="60"
                                                                     height="60"

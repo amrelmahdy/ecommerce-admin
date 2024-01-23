@@ -11,9 +11,6 @@ export const getCategories = async function () {
 }
 
 
-
-
-
 export const getAllCategories = async function () {
     try {
         const { data } = await httpClient.get('/categories');

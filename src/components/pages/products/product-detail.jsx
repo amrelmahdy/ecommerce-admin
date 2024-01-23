@@ -23,7 +23,7 @@ import PtLazyLoad from '../../features/lazyload';
 import PtTagsInput from '../../features/elements/tags-input';
 import PtToolTip from '../../features/elements/tooltip';
 
-import { getAttributes, getTags, getTaxTypes, getProduct, getProducts, uploadDynamicImages } from '../../../api';
+import { getAttributes, getTags, getTaxTypes, getProduct, getProducts, uploadDynamicImages, uploadCloudImages, deleteCloudImage } from '../../../api';
 import { getProductDetails, updateProduct } from '../../../api/products';
 import { getCategories, getCategory } from '../../../api/categories';
 import { getVendors } from '../../../api/vendors';
@@ -311,7 +311,7 @@ export default function ProductDetail({ history, ...props }) {
             try {
                 if (productImages.length > 0) {
                     const oldImages = images.filter(img => img.url);
-                    const uploadedImages = await uploadDynamicImages(productImages, `products/${newProduct.slug}`);
+                    const uploadedImages = await uploadCloudImages(productImages, `products/${product.slug}`);
                     if (images && images.length > 0) newProduct.images = [...oldImages, ...uploadedImages];
                 }
                 const productUpdated = await updateProduct(product.id, newProduct);
@@ -330,7 +330,7 @@ export default function ProductDetail({ history, ...props }) {
             } catch (error) {
                 setLoading(false);
                 window.scrollTo(0, 0)
-                if(Array.isArray(error.response.data.message)){
+                if (Array.isArray(error.response.data.message)) {
                     setError(error.response.data.message)
                 } else {
                     setError([error.response.data.message])
@@ -386,27 +386,6 @@ export default function ProductDetail({ history, ...props }) {
                 }
                 return file;
             }));
-        } else if (modalOpen.type === 'variant') {
-            let id = modalOpen.id[0];
-            let fileId = modalOpen.id[1];
-            setVariants(variants.map((variant, index) => {
-                if (index === id) {
-                    if (typeof fileId === 'number') {
-                        variant.files = variant.files.map((file, fileIndex) => {
-                            if (fileIndex === fileId) {
-                                return {
-                                    name: selectedMedia[0].name,
-                                    url: selectedMedia[0].copy_link
-                                }
-                            }
-                            return file;
-                        })
-                    } else {
-                        variant.media = selectedMedia;
-                    }
-                }
-                return variant;
-            }))
         }
     }
 
@@ -417,203 +396,20 @@ export default function ProductDetail({ history, ...props }) {
     function removeImage(e, index) {
         e.preventDefault();
         const _images = images.filter((image, i) => {
-            console.log(image, index)
+            if (i == index) {                // destroy image here if it is uploaded to cloudinary
+                if (image.public_id) {
+                    deleteCloudImage(image.public_id);
+                    const currentInages = images.filter((im, i) => im.public_id && im.public_id !== image.public_id)
+                    setLoading(true);
+                    updateProduct(product.id, { images: currentInages }).then(res => setLoading(false)).catch(err => setLoading(false));
+                }
+            }
             return i !== index
         })
         setImages(_images);
     }
 
-    function addTag(e, tag) {
-        e.preventDefault();
-        //inputRef.current.addTag(tag);
-    }
 
-    function addFile(e) {
-        e.preventDefault();
-        setFiles([
-            ...files,
-            {
-                name: '',
-                url: ''
-            }
-        ]);
-    }
-
-    function removeFile(index) {
-        setFiles(files.filter((file, id) => id !== index));
-    }
-
-    function fileNameChange(e, index) {
-        setFiles(files.map((file, id) => {
-            if (id === index) {
-                return {
-                    ...file,
-                    name: e.target.value
-                };
-            }
-            return file;
-        }));
-    }
-
-    function filePathChange(e, index) {
-        setFiles(files.map((file, id) => {
-            if (id === index) {
-                return {
-                    ...file,
-                    url: e.target.value
-                };
-            }
-            return file;
-        }));
-    }
-
-    function addAttr(e) {
-        e.preventDefault();
-        if (attrs.find(attr => attr.slug === selectedAttr)) {
-            return;
-        }
-        let attr = productAttrs.find(attr => attr.slug === selectedAttr);
-        setAttrs([
-            ...attrs,
-            {
-                ...attr,
-                usedForVariation: false,
-                selectedTerms: []
-            }
-        ]);
-    }
-
-    function removeAttr(e, slug) {
-        e.preventDefault();
-        setAttrs(attrs.filter(attr => attr.slug !== slug));
-    }
-
-    function changeAttr(index, key, value) {
-        setAttrs(attrs.map((attr, id) => {
-            if (id === index) {
-                attr[key] = value;
-            }
-            return attr;
-        }));
-    }
-
-    function variationChange(e, index) {
-        setVariation(variation.map((variation, id) => {
-            if (id === index) {
-                return e.target.value;
-            }
-            return variation;
-        }));
-    }
-
-    function addVariant(e) {
-        e.preventDefault();
-        setVariants([
-            ...variants,
-            {
-                sale_schedule: false,
-                virtual: false,
-                downloadable: false,
-                manage_stock: false,
-                files: [],
-                media: [],
-                excerpt: attrsForVariation.map((attr, id) => {
-                    return {
-                        attrId: attr.id,
-                        termId: variation[id]
-                    }
-                }),
-                tax_type: ''
-            }
-        ]);
-    }
-
-    function removeVariant(e, index) {
-        e.preventDefault();
-        setVariants(variants.filter((variant, id) => id !== index));
-    }
-
-    function variantTermChange(e, index, attrIndex) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                return {
-                    ...variant,
-                    excerpt: variant.excerpt.map((attr, attrId) => {
-                        if (attrId === attrIndex) {
-                            return {
-                                attrId: attr.id,
-                                termId: e.target.value === '' ? '' : parseInt(e.target.value)
-                            };
-                        }
-                        return attr;
-                    })
-                }
-            }
-            return variant;
-        }))
-    }
-
-    function variantItemChange(index, key, value) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant[key] = value;
-            }
-            return variant;
-        }));
-    }
-
-    function variantFileChange(index, fileIndex, key, value) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files = variant.files.map((file, fileId) => {
-                    if (fileId === fileIndex) {
-                        file[key] = value;
-                    }
-                    return file;
-                })
-            }
-            return variant;
-        }));
-    }
-
-    function addVariantFile(e, index) {
-        e.preventDefault();
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files.push({
-                    name: '',
-                    url: ''
-                });
-            }
-            return variant;
-        }));
-    }
-
-
-    console.log("images", images)
-
-    function removeVariantFile(index, fileIndex) {
-        setVariants(variants.map((variant, id) => {
-            if (id === index) {
-                variant.files.splice(fileIndex, 1);
-            }
-            return variant;
-        }));
-    }
-
-    function productChange(key, value) {
-        let temp = { ...product };
-        temp[key] = value;
-        setProduct(temp);
-    }
-
-    function openLightBox(index) {
-        setOpenImage(index);
-    }
-
-    function closeLightBox() {
-        setOpenImage(false);
-    }
 
 
     function addArTags(tags) {
@@ -1056,7 +852,7 @@ export default function ProductDetail({ history, ...props }) {
                                                                         <div className="centered">
                                                                             <a href="#thumb" className="thumb-image">
                                                                                 <PtLazyLoad
-                                                                                    src={image.url ? process.env.REACT_APP_BASE_URL + "/" + image.url : image.copy_link}
+                                                                                    src={image.url ? image.url : image.copy_link}
                                                                                     alt={image.alt_text ? image.alt_text : 'product'}
                                                                                     width="300"
                                                                                     height="300"

@@ -22,7 +22,7 @@ import { getVendors } from '../../../api/vendors';
 
 import { addProduct } from '../../../api/products';
 import { isValidProductPayload } from '../../../api/data.factory';
-import { uploadDynamicImages } from '../../../api';
+import { uploadCloudImages, uploadDynamicImages } from '../../../api';
 
 export default function ProductAdd({ history }) {
     const [error, setError] = useState([]);
@@ -146,10 +146,9 @@ export default function ProductAdd({ history }) {
             setLoading(true);
             try {
                 if (productImages.length > 0) {
-                    const images = await uploadDynamicImages(productImages, `products/${newProduct.slug}`);
+                    const images = await uploadCloudImages(productImages, `products`);
                     if (images && images.length > 0) newProduct.images = images
                 }
-
                 const productCreated = await addProduct(newProduct);
                 setLoading(false);
                 if (productCreated) {

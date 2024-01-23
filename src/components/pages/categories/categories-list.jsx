@@ -11,7 +11,7 @@ import PtFileUpload from '../../features/elements/file-upload';
 import { getCategories, addCategory, uploadCategoryImage, deleteCategory } from '../../../api/categories';
 import { removeXSSAttacks } from '../../../utils';
 import { getCategoriesList } from '../../../api/data.factory';
-import { uploadDynamicImages } from '../../../api';
+import { deleteCloudImage, uploadCloudImages, uploadDynamicImages } from '../../../api';
 
 export default function CategoriesList(props) {
     const [error, setError] = useState([]);
@@ -50,7 +50,6 @@ export default function CategoriesList(props) {
         className: "d-block ws-nowrap",
         accessor: d => {
             {
-                console.log("data", d)
                 return { id: d.id, en_name: d.en_name, image: d.image, depth: d.depth }
             }
         },
@@ -59,7 +58,7 @@ export default function CategoriesList(props) {
                 {row.value.image &&
                     <img
                         className="border mr-1"
-                        src={`${process.env.REACT_APP_BASE_URL}/${row.value.image}`}
+                        src={row.value.image.url}
                         alt="category"
                         width="60"
                         height="60"
@@ -133,6 +132,10 @@ export default function CategoriesList(props) {
         if (window.confirm("Are you sure you want to delete this data?")) {
             try {
                 const deleted = await deleteCategory(index);
+                if (deleted.image && deleted.image.public_id) {
+                    await deleteCloudImage(deleted.image.public_id)
+                }
+
                 if (deleted) handleGetCategories(0, 12, [], []);
             } catch (err) {
                 toast(
@@ -221,9 +224,9 @@ export default function CategoriesList(props) {
         if (parent != 0) newCat.parent = parent
         try {
             if (imageFile) {
-                const images = await uploadDynamicImages([imageFile], `categories/${slug}`);
-                const imagePath = images[0];
-                newCat.image = imagePath.url;
+                const images = await uploadCloudImages([imageFile], `categories`);
+                const image = images[0];
+                newCat.image = image;
             }
             const created = await addCategory(newCat);
 
@@ -258,7 +261,7 @@ export default function CategoriesList(props) {
             }
         } catch (error) {
             window.scrollTo(0, 0)
-            if(Array.isArray(error.response.data.message)){
+            if (Array.isArray(error.response.data.message)) {
                 setError(error.response.data.message)
             } else {
                 setError([error.response.data.message])

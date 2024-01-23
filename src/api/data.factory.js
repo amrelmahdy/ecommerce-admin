@@ -70,7 +70,7 @@ export const getProductsList = (results, from = 0, to, filters, sortBy) => {
         }
     });
 
-
+console.log("resultssssss", results)
     return {
         data: results.slice(from, to),
         total: results.length
